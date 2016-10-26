@@ -3,6 +3,18 @@ name = "slog-gittest"
 version = "0.1.0"
 authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>"]
 
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+debug-assertions = false
+
+[profile.bench]
+opt-level = 3
+debug = false
+lto = true
+debug-assertions = false
+
 [dependencies]
 slog = { git = "https://github.com/slog-rs/slog" }
 slog-json = { git = "https://github.com/slog-rs/slog" }
