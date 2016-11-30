@@ -20,11 +20,12 @@ slog = "*"
 slog-json = "*"
 slog-term = "*"
 slog-scope = "*"
-slog-syslog = "*"
+slog-syslog = "1.0.0-alpha9"
 slog-bunyan= "*"
 slog-atomic= "*"
 slog-stream = "*"
 slog-extra = "*"
+slog-stdlog = "*"
 slog-envlogger = "*"
 
 log = "0.3.6"
@@ -37,9 +38,9 @@ nix = "0.6.0"
 "slog-term:1.3.3" = { git = "https://github.com/slog-rs/term" }
 "slog-extra:1.3.3" = { git = "https://github.com/slog-rs/extra" }
 "slog-stdlog:1.1.0" = { git = "https://github.com/slog-rs/slog" }
-"slog-json:1.2.0" = { git = "https://github.com/slog-rs/slog" }
-"slog-bunyan:1.1.0" = { git = "https://github.com/slog-rs/slog" }
+"slog-json:1.2.1" = { git = "https://github.com/slog-rs/json" }
+"slog-bunyan:1.1.1" = { git = "https://github.com/slog-rs/bunyan" }
 "slog-envlogger:1.1.0" = { git = "https://github.com/slog-rs/envlogger" }
-"slog-atomic:0.4.1" = { git = "https://github.com/slog-rs/slog" }
-"slog-scope:0.2.0" = { git = "https://github.com/slog-rs/slog" }
+"slog-atomic:0.4.2" = { git = "https://github.com/slog-rs/atomic" }
+"slog-scope:0.2.1" = { git = "https://github.com/slog-rs/scope" }
 "slog-syslog:1.0.0-alpha9" = { git = "https://github.com/slog-rs/syslog" }
