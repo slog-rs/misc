@@ -20,6 +20,7 @@ slog = "*"
 slog-json = "*"
 slog-term = "*"
 slog-scope = "*"
+slog-scope-stdlog = "*"
 slog-syslog = "1.0.0-alpha9"
 slog-bunyan= "*"
 slog-atomic= "*"
@@ -43,4 +44,5 @@ nix = "0.6.0"
 "slog-envlogger:1.1.0" = { git = "https://github.com/slog-rs/envlogger" }
 "slog-atomic:0.4.2" = { git = "https://github.com/slog-rs/atomic" }
 "slog-scope:0.2.1" = { git = "https://github.com/slog-rs/scope" }
+"slog-scope-stdlog:0.2.0" = { git = "https://github.com/slog-rs/scope-stdlog" }
 "slog-syslog:1.0.0-alpha9" = { git = "https://github.com/slog-rs/syslog" }
