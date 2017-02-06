@@ -34,9 +34,9 @@ lazy_static = "0.1.16"
 nix = "0.6.0"
 
 [replace]
-"slog:1.4.1" = { git = "https://github.com/slog-rs/slog" }
+"slog:1.5.0" = { git = "https://github.com/slog-rs/slog", branch = "1.x.y" }
 "slog-stream:1.2.0" = { git = "https://github.com/slog-rs/stream" }
-"slog-term:1.4.0" = { git = "https://github.com/slog-rs/term" }
+"slog-term:1.5.0" = { git = "https://github.com/slog-rs/term" }
 "slog-extra:0.1.1" = { git = "https://github.com/slog-rs/extra" }
 "slog-stdlog:1.1.0" = { git = "https://github.com/slog-rs/stdlog" }
 "slog-json:1.2.1" = { git = "https://github.com/slog-rs/json" }
