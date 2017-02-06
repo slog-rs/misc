@@ -19,7 +19,7 @@ struct BlackBoxDrain;
 
 impl Drain for BlackBoxDrain {
     type Error = ();
-    fn log(&self, ri: &Record, o : &OwnedKeyValueList) -> std::result::Result<(), ()> {
+    fn log(&self, ri: &Record, o : &OwnedKVList) -> std::result::Result<(), ()> {
 
         test::black_box((ri, o));
         Ok(())
@@ -203,7 +203,7 @@ fn log_stream_empty_json_blackbox_i32pushclosure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
-        info!(log, ""; "i32" => PushLazy(|_:&Record, ser : ValueSerializer|{
+        info!(log, ""; "i32" => PushFnValue(|_:&Record, ser|{
             ser.serialize(5)
         }));
     });
@@ -227,7 +227,7 @@ fn log_stream_empty_json_blackbox_strpushclosure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
-        info!(log, ""; "str" => PushLazy(|_:&Record, ser : ValueSerializer|{
+        info!(log, ""; "str" => PushFnValue(|_:&Record, ser|{
             ser.serialize(LONG_STRING)
         }));
     });
@@ -339,7 +339,7 @@ fn log_stream_json_blackbox_i32pushclosure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
-        info!(log, ""; "i32" => PushLazy(|_:&Record, ser : ValueSerializer|{
+        info!(log, ""; "i32" => PushFnValue(|_:&Record, ser|{
             ser.serialize(5)
         }));
     });
@@ -361,7 +361,7 @@ fn log_stream_json_blackbox_strpushclosure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
-        info!(log, ""; "str" => PushLazy(|_:&Record, ser : ValueSerializer|{
+        info!(log, ""; "str" => PushFnValue(|_:&Record, ser|{
             ser.serialize(LONG_STRING)
         }));
     });

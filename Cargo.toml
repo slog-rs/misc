@@ -16,30 +16,33 @@ lto = true
 debug-assertions = false
 
 [dependencies]
-slog = "*"
-slog-json = "*"
-slog-term = "*"
-slog-scope = "*"
-slog-scope-stdlog = "*"
-slog-syslog = "1.0.0-alpha9"
-slog-bunyan= "*"
-slog-atomic= "*"
-slog-stream = "*"
-slog-extra = "*"
-slog-stdlog = "*"
-slog-envlogger = "*"
+slog = { git = "https://github.com/slog-rs/slog", branch="2.x.y" }
+slog-json = { git = "https://github.com/slog-rs/json", branch="2.x.y" }
+#slog-term = { git = "https://github.com/slog-rs/term", branch="2.x.y" }
+slog-stream = { git = "https://github.com/slog-rs/stream", branch="2.x.y" }
+slog-serde = { git = "https://github.com/slog-rs/serde", branch="2.x.y" }
+#slog-scope = "*"
+#slog-scope-stdlog = "*"
+#slog-syslog = "1.0.0-alpha9"
+#slog-bunyan= "*"
+#slog-atomic= "*"
+#slog-stream = "*"
+slog-extra = { git = "https://github.com/slog-rs/extra", branch="2.x.y" }
+#slog-stdlog = "*"
+#slog-envlogger = "*"
 
-log = "0.3.6"
-lazy_static = "0.1.16"
-nix = "0.6.0"
+#log = "0.3.6"
+#lazy_static = "0.1.16"
+#nix = "0.6.0"
 
 [replace]
-"slog:1.5.0" = { git = "https://github.com/slog-rs/slog", branch = "1.x.y" }
-"slog-stream:1.2.0" = { git = "https://github.com/slog-rs/stream" }
-"slog-term:1.5.0" = { git = "https://github.com/slog-rs/term" }
-"slog-extra:0.1.1" = { git = "https://github.com/slog-rs/extra" }
+"slog:2.0.0-alpha1" = { git = "https://github.com/slog-rs/slog", branch="2.x.y" }
+"slog-stream:2.0.0-alpha1" = { git = "https://github.com/slog-rs/stream", branch="2.x.y" }
+"slog-term:2.0.0-alpha1" = { git = "https://github.com/slog-rs/term", branch="2.x.y" }
+"slog-extra:0.2.0-alpha1" = { git = "https://github.com/slog-rs/extra", branch="2.x.y" }
+"slog-serde:1.0.0-alpha1" = { git = "https://github.com/slog-rs/serde", branch="2.x.y" }
+"slog-json:2.0.0-alpha1" = { git = "https://github.com/slog-rs/json", branch="2.x.y" }
 "slog-stdlog:1.1.0" = { git = "https://github.com/slog-rs/stdlog" }
-"slog-json:1.2.1" = { git = "https://github.com/slog-rs/json" }
 "slog-bunyan:1.1.1" = { git = "https://github.com/slog-rs/bunyan" }
 "slog-envlogger:0.5.0" = { git = "https://github.com/slog-rs/envlogger" }
 "slog-atomic:0.4.3" = { git = "https://github.com/slog-rs/atomic" }
