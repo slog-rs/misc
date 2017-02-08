@@ -56,53 +56,98 @@ fn json_blackbox() -> impl Drain<Error=()> {
 }
 
 #[bench]
-fn log_filter_out_empty(b: &mut Bencher) {
+fn log_filter_out_empty_x100(b: &mut Bencher) {
     let log = Logger::root(LevelFilter::new(BlackBoxDrain, Level::Warning), o!());
 
     b.iter(|| {
-        info!(log, "");
+        for _ in 0u32..100 {
+            info!(log, "");
+        }
+    });
+}
+
+
+#[bench]
+fn log_discard_0br_10ow_x100(b: &mut Bencher) {
+    let log = Logger::root(
+        BlackBoxDrain,
+        o!(
+            "u8" => 0u8,
+            "u16" => 0u16,
+            "u32" => 0u32,
+            "u64" => 0u64,
+            "bool" => false,
+            "str" => "",
+            "f32" => 0f32,
+            "f64" => 0f64,
+            "option" => Some(0),
+            "unit" => (),
+            )
+        );
+
+    b.iter(|| {
+        for _ in 0u32..100 {
+            info!(log, "");
+        }
     });
 }
 
 #[bench]
-fn log_discard_empty(b: &mut Bencher) {
+fn log_discard_10br_0ow_x100(b: &mut Bencher) {
     let log = Logger::root(BlackBoxDrain, o!());
 
     b.iter(|| {
-        info!(log, "");
+        for i in 0u32..100 {
+            info!(log,
+                  "";
+                  "u8" => 0u8,
+                  "u16" => 0u16,
+                  "u32" => i,
+                  "u64" => 0u64,
+                  "bool" => false,
+                  "str" => "",
+                  "f32" => 0f32,
+                  "f64" => 0f64,
+                  "option" => Some(0),
+                  "unit" => (),
+                  );
+        }
+    });
+}
+#[bench]
+fn log_discard_empty_record_x100(b: &mut Bencher) {
+    let log = Logger::root(BlackBoxDrain, o!());
+
+    b.iter(|| {
+        for _ in 0u32..100 {
+            info!(log, "");
+        }
+    });
+}
+
+
+
+#[bench]
+fn log_discard_u32val_x100(b: &mut Bencher) {
+    let log = Logger::root(BlackBoxDrain, o!());
+
+    b.iter(|| {
+        for i in 0u32..100 {
+            info!(log, ""; "u32" => i);
+        }
     });
 }
 
 #[bench]
-fn log_discard_nonempty(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!("build" => "123456", "id" => 123456));
+fn log_discard_u32closure_x100(b: &mut Bencher) {
+    let log = Logger::root(BlackBoxDrain, o!());
 
     b.iter(|| {
-        info!(log, ""; "what" => "write");
+        for i in 0u32..100 {
+            info!(log, ""; "i32" => move |_:&Record|{i});
+        }
     });
 }
-
-#[bench]
-fn log_discard_nonempty_10(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!("build" => "123456", "id" => 123456));
-
-    b.iter(|| {
-        info!(log,
-              "";
-              "u8" => 0u8,
-              "u16" => 0u16,
-              "u32" => 0u32,
-              "u64" => 0u64,
-              "bool" => false,
-              "str" => "",
-              "f32" => 0f32, 
-              "f64" => 0f64, 
-              "option" => Some(0), 
-              "unit" => (),
-             );
-    });
-}
-
 
 #[bench]
 fn logger_clone_empty(b: &mut Bencher) {
@@ -160,24 +205,6 @@ fn logger_new_nonempty_10(b: &mut Bencher) {
     });
 }
 
-
-#[bench]
-fn log_discard_i32val(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!());
-
-    b.iter(|| {
-        info!(log, ""; "i32" => 5);
-    });
-}
-
-#[bench]
-fn log_discard_i32closure(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!());
-
-    b.iter(|| {
-        info!(log, ""; "i32" => |_:&Record|{5});
-    });
-}
 
 #[bench]
 fn log_stream_empty_json_blackbox_i32val(b: &mut Bencher) {
