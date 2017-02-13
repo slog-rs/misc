@@ -4,21 +4,38 @@
 #[macro_use]
 extern crate slog;
 extern crate slog_json;
-extern crate slog_stream;
+extern crate slog_std;
 
 extern crate test;
 
 use std::io;
 use test::Bencher;
 use slog::*;
-use slog_stream::*;
+use slog_std::Async;
+use std::sync::Mutex;
 
 const LONG_STRING : &'static str = "A long string that would take some time to allocate";
 
 struct BlackBoxDrain;
 
+fn o_10() -> slog::OwnedKV {
+    o!(
+        "u8" => 0u8,
+        "u16" => 0u16,
+        "u32" => 0u32,
+        "u64" => 0u64,
+        "bool" => false,
+        "str" => "",
+        "f32" => 0f32,
+        "f64" => 0f64,
+        "option" => Some(0),
+        "unit" => (),
+        )
+}
+
 impl Drain for BlackBoxDrain {
-    type Error = ();
+    type Ok = ();
+    type Err= ();
     fn log(&self, ri: &Record, o : &OwnedKVList) -> std::result::Result<(), ()> {
 
         test::black_box((ri, o));
@@ -39,25 +56,23 @@ impl io::Write for BlackBoxWriter {
     }
 }
 
-fn async_empty_json_blackbox() -> impl Drain<Error=()> {
-    async_stream(BlackBoxWriter, slog_json::new().build()).ignore_err()
+fn async_json_blackbox() -> impl Drain<Err=(), Ok=()> {
+    let json = slog_json::default(BlackBoxWriter).fuse();
+    let async : Async = Async::custom(json).chan_size(1024 * 1024 * 16).build();
+    async.ignore_res()
 }
 
-fn async_json_blackbox() -> impl Drain<Error=()> {
-    async_stream(BlackBoxWriter, slog_json::default()).ignore_err()
+fn empty_json_blackbox() -> impl Drain<Err=(), Ok=()> {
+    Mutex::new(slog_json::custom(BlackBoxWriter).build().fuse()).ignore_res()
 }
 
-fn empty_json_blackbox() -> impl Drain<Error=()> {
-    stream(BlackBoxWriter, slog_json::new().build()).ignore_err()
-}
-
-fn json_blackbox() -> impl Drain<Error=()> {
-    stream(BlackBoxWriter, slog_json::default()).ignore_err()
+fn json_blackbox() -> impl Drain<Err=(), Ok=()> {
+    Mutex::new(slog_json::default(BlackBoxWriter).fuse()).ignore_res()
 }
 
 #[bench]
 fn log_filter_out_empty_x100(b: &mut Bencher) {
-    let log = Logger::root(LevelFilter::new(BlackBoxDrain, Level::Warning), o!());
+    let log = Logger::root(LevelFilter::new(BlackBoxDrain, Level::Warning).ignore_res(), o!());
 
     b.iter(|| {
         for _ in 0u32..100 {
@@ -68,22 +83,8 @@ fn log_filter_out_empty_x100(b: &mut Bencher) {
 
 
 #[bench]
-fn log_discard_0br_10ow_x100(b: &mut Bencher) {
-    let log = Logger::root(
-        BlackBoxDrain,
-        o!(
-            "u8" => 0u8,
-            "u16" => 0u16,
-            "u32" => 0u32,
-            "u64" => 0u64,
-            "bool" => false,
-            "str" => "",
-            "f32" => 0f32,
-            "f64" => 0f64,
-            "option" => Some(0),
-            "unit" => (),
-            )
-        );
+fn log_discard_00br_10ow_x100(b: &mut Bencher) {
+    let log = Logger::root(BlackBoxDrain, o_10());
 
     b.iter(|| {
         for _ in 0u32..100 {
@@ -93,7 +94,7 @@ fn log_discard_0br_10ow_x100(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_discard_10br_0ow_x100(b: &mut Bencher) {
+fn log_discard_10br_00ow_x100(b: &mut Bencher) {
     let log = Logger::root(BlackBoxDrain, o!());
 
     b.iter(|| {
@@ -115,7 +116,7 @@ fn log_discard_10br_0ow_x100(b: &mut Bencher) {
     });
 }
 #[bench]
-fn log_discard_empty_record_x100(b: &mut Bencher) {
+fn log_discard_00br_00ow_x100(b: &mut Bencher) {
     let log = Logger::root(BlackBoxDrain, o!());
 
     b.iter(|| {
@@ -150,7 +151,7 @@ fn log_discard_u32closure_x100(b: &mut Bencher) {
 }
 
 #[bench]
-fn logger_clone_empty(b: &mut Bencher) {
+fn logger_clone(b: &mut Bencher) {
     let log = Logger::root(BlackBoxDrain, o!());
 
     b.iter(|| {
@@ -159,8 +160,8 @@ fn logger_clone_empty(b: &mut Bencher) {
 }
 
 #[bench]
-fn logger_clone_nonempty(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!("build" => "123456", "id" => 123456));
+fn logger_clone_10prev(b: &mut Bencher) {
+    let log = Logger::root(BlackBoxDrain, o_10());
 
     b.iter(|| {
         log.clone()
@@ -168,7 +169,7 @@ fn logger_clone_nonempty(b: &mut Bencher) {
 }
 
 #[bench]
-fn logger_new_empty(b: &mut Bencher) {
+fn logger_child_00prev_00new(b: &mut Bencher) {
     let log = Logger::root(BlackBoxDrain, o!());
 
     b.iter(|| {
@@ -177,37 +178,34 @@ fn logger_new_empty(b: &mut Bencher) {
 }
 
 #[bench]
-fn logger_new_nonempty(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!("build" => "123456", "id" => 123456));
+fn logger_child_00prev_10new(b: &mut Bencher) {
+    let log = Logger::root(BlackBoxDrain, o!());
 
     b.iter(|| {
-        log.new(o!("what" => "write"));
+        log.new(o_10());
     });
 }
 
 #[bench]
-fn logger_new_nonempty_10(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!("build" => "123456", "id" => 123456));
+fn logger_child_10prev_00new(b: &mut Bencher) {
+    let log = Logger::root(BlackBoxDrain, o_10());
 
     b.iter(|| {
-        log.new(o!(
-                "u8" => 0u8,
-                "u16" => 0u16,
-                "u32" => 0u32,
-                "u64" => 0u64,
-                "bool" => false,
-                "str" => "",
-                "f32" => 0f32,
-                "f64" => 0f64,
-                "option" => Some(0),
-                "unit" => (),
-                ));
+        log.new(o!());
+    });
+}
+#[bench]
+fn logger_child_10prev_10new(b: &mut Bencher) {
+    let log = Logger::root(BlackBoxDrain, o_10());
+
+    b.iter(|| {
+        log.new(o_10());
     });
 }
 
 
 #[bench]
-fn log_stream_empty_json_blackbox_i32val(b: &mut Bencher) {
+fn log_empty_json_blackbox_i32val(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
@@ -216,7 +214,7 @@ fn log_stream_empty_json_blackbox_i32val(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_empty_json_blackbox_i32closure(b: &mut Bencher) {
+fn log_empty_json_blackbox_i32closure(b: &mut Bencher) {
 
     let log = Logger::root(empty_json_blackbox(), o!());
 
@@ -226,7 +224,7 @@ fn log_stream_empty_json_blackbox_i32closure(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_empty_json_blackbox_i32pushclosure(b: &mut Bencher) {
+fn log_empty_json_blackbox_i32pushclosure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
@@ -239,7 +237,7 @@ fn log_stream_empty_json_blackbox_i32pushclosure(b: &mut Bencher) {
 
 
 #[bench]
-fn log_stream_empty_json_blackbox_strclosure(b: &mut Bencher) {
+fn log_empty_json_blackbox_strclosure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
@@ -250,7 +248,7 @@ fn log_stream_empty_json_blackbox_strclosure(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_empty_json_blackbox_strpushclosure(b: &mut Bencher) {
+fn log_empty_json_blackbox_strpushclosure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
@@ -261,7 +259,7 @@ fn log_stream_empty_json_blackbox_strpushclosure(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_json_blackbox_i32val(b: &mut Bencher) {
+fn log_json_blackbox_i32val(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
@@ -270,8 +268,8 @@ fn log_stream_json_blackbox_i32val(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_json_blackbox_10(b: &mut Bencher) {
-    let log = Logger::root(json_blackbox(), o!());
+fn log_json_blackbox_10br_10ow(b: &mut Bencher) {
+    let log = Logger::root(json_blackbox(),  o_10());
 
     b.iter(|| {
         info!(log, "";
@@ -290,8 +288,8 @@ fn log_stream_json_blackbox_10(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_empty_json_blackbox_10(b: &mut Bencher) {
-    let log = Logger::root(empty_json_blackbox(), o!());
+fn log_empty_json_blackbox_10br_10ow(b: &mut Bencher) {
+    let log = Logger::root(empty_json_blackbox(), o_10());
 
     b.iter(|| {
         info!(log, "";
@@ -310,20 +308,9 @@ fn log_stream_empty_json_blackbox_10(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_empty_json_blackbox_log_10(b: &mut Bencher) {
-    let log = Logger::root(empty_json_blackbox(), o!());
-    let log = log.new(o!(
-            "u8" => 0u8,
-            "u16" => 0u16,
-            "u32" => 0u32,
-            "u64" => 0u64,
-            "bool" => false,
-            "str" => "",
-            "f32" => 0f32,
-            "f64" => 0f64,
-            "option" => Some(0),
-            "unit" => (),
-            ));
+fn log_empty_json_blackbox_00br_10ow(b: &mut Bencher) {
+    let log = Logger::root(empty_json_blackbox(), o_10());
+
 
     b.iter(|| {
         info!(log, "");
@@ -331,7 +318,7 @@ fn log_stream_empty_json_blackbox_log_10(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_json_blackbox_log_10(b: &mut Bencher) {
+fn log_json_blackbox_10br_00ow(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
     let log = log.new(o!(
             "u8" => 0u8,
@@ -352,7 +339,7 @@ fn log_stream_json_blackbox_log_10(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_json_blackbox_i32closure(b: &mut Bencher) {
+fn log_json_blackbox_i32closure(b: &mut Bencher) {
 
     let log = Logger::root(json_blackbox(), o!());
 
@@ -362,7 +349,7 @@ fn log_stream_json_blackbox_i32closure(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_json_blackbox_i32pushclosure(b: &mut Bencher) {
+fn log_json_blackbox_i32pushclosure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
@@ -373,7 +360,7 @@ fn log_stream_json_blackbox_i32pushclosure(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_json_blackbox_strclosure(b: &mut Bencher) {
+fn log_json_blackbox_strclosure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
@@ -384,7 +371,7 @@ fn log_stream_json_blackbox_strclosure(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_json_blackbox_strpushclosure(b: &mut Bencher) {
+fn log_json_blackbox_strpushclosure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
@@ -395,17 +382,27 @@ fn log_stream_json_blackbox_strpushclosure(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_async_json_blackbox_i32val(b: &mut Bencher) {
+fn log_async_json_blackbox_00br_00_ow(b: &mut Bencher) {
     let log = Logger::root(async_json_blackbox(), o!());
 
     b.iter(|| {
-        info!(log, "";  "i32" => 5);
+        info!(log, "");
     });
 }
 
 #[bench]
-fn log_stream_async_json_blackbox_10(b: &mut Bencher) {
-    let log = Logger::root(async_json_blackbox(), o!());
+fn log_async_json_blackbox_00br_10_ow(b: &mut Bencher) {
+    let log = Logger::root(async_json_blackbox(), o_10());
+
+    b.iter(|| {
+        info!(log, "");
+    });
+}
+
+
+#[bench]
+fn log_async_json_blackbox_10br_10ow(b: &mut Bencher) {
+    let log = Logger::root(async_json_blackbox(), o_10());
 
     b.iter(|| {
         info!(log, "";
@@ -424,17 +421,9 @@ fn log_stream_async_json_blackbox_10(b: &mut Bencher) {
 }
 
 #[bench]
-fn log_stream_async_empty_json_blackbox_i32val(b: &mut Bencher) {
-    let log = Logger::root(async_empty_json_blackbox(), o!());
+fn log_async_json_blackbox_10br_00ow(b: &mut Bencher) {
+    let log = Logger::root(async_json_blackbox(), o!());
 
-    b.iter(|| {
-        info!(log, "";  "i32" => 5);
-    });
-}
-
-#[bench]
-fn log_stream_async_empty_json_blackbox_10(b: &mut Bencher) {
-    let log = Logger::root(async_empty_json_blackbox(), o!());
 
     b.iter(|| {
         info!(log, "";
@@ -449,48 +438,6 @@ fn log_stream_async_empty_json_blackbox_10(b: &mut Bencher) {
               "option" => Some(0),
               "unit" => (),
               );
-    });
-}
-
-#[bench]
-fn log_stream_async_json_blackbox_log_10(b: &mut Bencher) {
-    let log = Logger::root(async_json_blackbox(), o!());
-    let log = log.new(o!(
-            "u8" => 0u8,
-            "u16" => 0u16,
-            "u32" => 0u32,
-            "u64" => 0u64,
-            "bool" => false,
-            "str" => "",
-            "f32" => 0f32,
-            "f64" => 0f64,
-            "option" => Some(0),
-            "unit" => (),
-            ));
-
-    b.iter(|| {
-        info!(log, "");
-    });
-}
-
-#[bench]
-fn log_stream_async_empty_json_blackbox_log_10(b: &mut Bencher) {
-    let log = Logger::root(async_empty_json_blackbox(), o!());
-    let log = log.new(o!(
-            "u8" => 0u8,
-            "u16" => 0u16,
-            "u32" => 0u32,
-            "u64" => 0u64,
-            "bool" => false,
-            "str" => "",
-            "f32" => 0f32,
-            "f64" => 0f64,
-            "option" => Some(0),
-            "unit" => (),
-            ));
-
-    b.iter(|| {
-        info!(log, "");
     });
 }
 

@@ -11,14 +11,14 @@ debug-assertions = false
 
 [profile.bench]
 opt-level = 3
-debug = false
+debug = true
 lto = true
 debug-assertions = false
 
 [dependencies]
 slog = { git = "https://github.com/slog-rs/slog", branch="2.x.y" }
 slog-json = { git = "https://github.com/slog-rs/json", branch="2.x.y" }
-slog-stream = { git = "https://github.com/slog-rs/stream", branch="2.x.y" }
+#slog-stream = { git = "https://github.com/slog-rs/stream", branch="2.x.y" }
 slog-serde = { git = "https://github.com/slog-rs/serde", branch="2.x.y" }
 #slog-term = { git = "https://github.com/slog-rs/term", branch="2.x.y" }
 #slog-scope = "*"
@@ -26,7 +26,7 @@ slog-serde = { git = "https://github.com/slog-rs/serde", branch="2.x.y" }
 #slog-syslog = "1.0.0-alpha9"
 #slog-bunyan= "*"
 #slog-atomic= "*"
-slog-extra = { git = "https://github.com/slog-rs/extra", branch="2.x.y" }
+slog-std = { path= "../std" }
 #slog-stdlog = "*"
 #slog-envlogger = "*"
 
