@@ -4,14 +4,14 @@
 #[macro_use]
 extern crate slog;
 extern crate slog_json;
-extern crate slog_std;
+extern crate slog_async;
 
 extern crate test;
 
 use std::io;
 use test::Bencher;
 use slog::*;
-use slog_std::Async;
+use slog_async::Async;
 use std::sync::Mutex;
 
 const LONG_STRING : &'static str = "A long string that would take some time to allocate";
@@ -35,8 +35,9 @@ fn o_10() -> slog::OwnedKV {
 
 impl Drain for BlackBoxDrain {
     type Ok = ();
-    type Err= ();
-    fn log(&self, ri: &Record, o : &OwnedKVList) -> std::result::Result<(), ()> {
+    type Err= Never;
+    fn log(&self, ri: &Record, o : &OwnedKVList) -> std::result::Result<(),
+    Never> {
 
         test::black_box((ri, o));
         Ok(())
@@ -56,54 +57,134 @@ impl io::Write for BlackBoxWriter {
     }
 }
 
-fn async_json_blackbox() -> impl Drain<Err=(), Ok=()> {
-    let json = slog_json::default(BlackBoxWriter).fuse();
+fn async_json_blackbox() -> impl Drain<Err=Never, Ok=()> {
+    let json = slog_json::default(BlackBoxWriter).map(Fuse);
     let async : Async = Async::custom(json).chan_size(1024 * 1024 * 16).build();
     async.ignore_res()
 }
 
-fn empty_json_blackbox() -> impl Drain<Err=(), Ok=()> {
-    Mutex::new(slog_json::custom(BlackBoxWriter).build().fuse()).ignore_res()
+fn empty_json_blackbox() -> impl Drain<Err=Never, Ok=()> {
+    Mutex::new(slog_json::custom(BlackBoxWriter).build().map(Fuse)).ignore_res()
 }
 
-fn json_blackbox() -> impl Drain<Err=(), Ok=()> {
-    Mutex::new(slog_json::default(BlackBoxWriter).fuse()).ignore_res()
+fn json_blackbox() -> impl Drain<Err=Never, Ok=()> {
+    Mutex::new(slog_json::default(BlackBoxWriter).map(Fuse)).ignore_res()
 }
+
+mod x100 {
+    use super::*;
+#[bench]
+    fn log_filter_out_empty_x100(b: &mut Bencher) {
+        let log = Logger::root(LevelFilter::new(BlackBoxDrain, Level::Warning).ignore_res(), o!());
+
+        b.iter(|| {
+            for _ in 0u32..100 {
+                info!(log, "");
+            }
+        });
+    }
+
 
 #[bench]
-fn log_filter_out_empty_x100(b: &mut Bencher) {
-    let log = Logger::root(LevelFilter::new(BlackBoxDrain, Level::Warning).ignore_res(), o!());
+    fn log_discard_00br_10ow_x100(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o_10());
 
-    b.iter(|| {
-        for _ in 0u32..100 {
+        b.iter(|| {
+            for _ in 0u32..100 {
+                info!(log, "");
+            }
+        });
+    }
+
+#[bench]
+    fn log_discard_10br_00ow_x100(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o!());
+
+        b.iter(|| {
+            for i in 0u32..100 {
+                info!(log,
+                      "";
+                      "u8" => 0u8,
+                      "u16" => 0u16,
+                      "u32" => i,
+                      "u64" => 0u64,
+                      "bool" => false,
+                      "str" => "",
+                      "f32" => 0f32,
+                      "f64" => 0f64,
+                      "option" => Some(0),
+                      "unit" => (),
+                      );
+            }
+        });
+    }
+#[bench]
+    fn log_discard_00br_00ow_x100(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o!());
+
+        b.iter(|| {
+            for _ in 0u32..100 {
+                info!(log, "");
+            }
+        });
+    }
+
+
+
+#[bench]
+    fn log_discard_u32val_x100(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o!());
+
+        b.iter(|| {
+            for i in 0u32..100 {
+                info!(log, ""; "u32" => i);
+            }
+        });
+    }
+
+#[bench]
+    fn log_discard_u32closure_x100(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o!());
+
+        b.iter(|| {
+            for i in 0u32..100 {
+                info!(log, ""; "i32" => move |_:&Record|{i});
+            }
+        });
+    }
+}
+mod x1 {
+    use super::*;
+
+#[bench]
+    fn log_filter_out_empty_x1(b: &mut Bencher) {
+        let log = Logger::root(LevelFilter::new(BlackBoxDrain, Level::Warning).ignore_res(), o!());
+
+        b.iter(|| {
             info!(log, "");
-        }
-    });
-}
+        });
+    }
 
 
 #[bench]
-fn log_discard_00br_10ow_x100(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o_10());
+    fn log_discard_00br_10ow_x1(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o_10());
 
-    b.iter(|| {
-        for _ in 0u32..100 {
+        b.iter(|| {
             info!(log, "");
-        }
-    });
-}
+        });
+    }
 
 #[bench]
-fn log_discard_10br_00ow_x100(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!());
+    fn log_discard_10br_00ow_x1(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o!());
 
-    b.iter(|| {
-        for i in 0u32..100 {
+        b.iter(|| {
             info!(log,
                   "";
                   "u8" => 0u8,
                   "u16" => 0u16,
-                  "u32" => i,
+                  "u32" => 0u32,
                   "u64" => 0u64,
                   "bool" => false,
                   "str" => "",
@@ -112,42 +193,34 @@ fn log_discard_10br_00ow_x100(b: &mut Bencher) {
                   "option" => Some(0),
                   "unit" => (),
                   );
-        }
-    });
-}
+        });
+    }
 #[bench]
-fn log_discard_00br_00ow_x100(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!());
+    fn log_discard_00br_00ow_x1(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o!());
 
-    b.iter(|| {
-        for _ in 0u32..100 {
+        b.iter(|| {
             info!(log, "");
-        }
-    });
-}
-
-
+        });
+    }
 
 #[bench]
-fn log_discard_u32val_x100(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!());
+    fn log_discard_u32val_x1(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o!());
 
-    b.iter(|| {
-        for i in 0u32..100 {
-            info!(log, ""; "u32" => i);
-        }
-    });
-}
+        b.iter(|| {
+            info!(log, ""; "u32" => 0u32);
+        });
+    }
 
 #[bench]
-fn log_discard_u32closure_x100(b: &mut Bencher) {
-    let log = Logger::root(BlackBoxDrain, o!());
+    fn log_discard_u32closure_x1(b: &mut Bencher) {
+        let log = Logger::root(BlackBoxDrain, o!());
 
-    b.iter(|| {
-        for i in 0u32..100 {
-            info!(log, ""; "i32" => move |_:&Record|{i});
-        }
-    });
+        b.iter(|| {
+            info!(log, ""; "i32" => move |_:&Record|{0u32});
+        });
+    }
 }
 
 #[bench]
