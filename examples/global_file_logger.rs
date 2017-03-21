@@ -1,14 +1,13 @@
 #[macro_use]
 extern crate slog;
-extern crate slog_stream;
 extern crate slog_stdlog;
 #[macro_use]
 extern crate log;
 
-use std::io;
-use std::fs::OpenOptions;
 
 use slog::DrainExt;
+use std::fs::OpenOptions;
+use std::io;
 
 fn main() {
     let log_path = "your_log_file_path.log";
@@ -16,7 +15,8 @@ fn main() {
         .create(true)
         .write(true)
         .truncate(true)
-        .open(log_path).unwrap();
+        .open(log_path)
+        .unwrap();
 
     let drain = slog_stream::stream(file, MyFormat).fuse();
     let logger = slog::Logger::root(drain, o!());
