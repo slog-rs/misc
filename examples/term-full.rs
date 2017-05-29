@@ -3,13 +3,12 @@ extern crate slog;
 extern crate slog_term;
 
 use slog::Drain;
-use std::sync::Arc;
 
 fn main() {
     let decorator = slog_term::PlainSyncDecorator::new(std::io::stdout());
-    let drain = slog_term::Term::new(decorator).build().fuse();
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
 
-    let root_log = slog::Logger::root(Arc::new(drain), o!("version" => "0.5"));
+    let root_log = slog::Logger::root(drain, o!("version" => "0.5"));
     let server_log = root_log.new(o!("host" => "localhost", "port" => "8080"));
     let peer1_log =
         server_log.new(o!("peer_addr" => "8.8.8.8", "port" => "18230"));

@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::thread;
 
 use slog::Logger;
-use slog::Record;
+use slog::FnValue;
 
 thread_local!(static TL_THREAD_ID: RefCell<String> = RefCell::new("main".into()));
 
@@ -17,11 +17,10 @@ fn foo(log: Logger) {
 fn main() {
     let root = slog::Logger::root(
         slog::Discard,
-        o!("thread-id" => |_:&Record| {
+        o!("thread-id" => FnValue(|_| {
             TL_THREAD_ID.with(|id| { id.borrow().clone() })
-        }
-        ),
-        );
+        }))
+    );
 
     let mut join = vec![];
 
