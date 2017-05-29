@@ -6,17 +6,19 @@ extern crate slog_term;
 use slog::*;
 
 fn main() {
-    let drain = slog_term::streamer().full().build();
+    let decorator = slog_term::PlainSyncDecorator::new(std::io::stdout());
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+
     let log = Logger::root(
-        drain.fuse(),
+        drain,
         o!("place" =>
-           move |info : &Record| {
+           FnValue(move |info| {
                format!("{}:{} {}",
                        info.file(),
                        info.line(),
                        info.module(),
                        )
-           }
+           })
           )
         );
 

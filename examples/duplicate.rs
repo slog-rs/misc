@@ -2,21 +2,22 @@
 extern crate slog;
 extern crate slog_term;
 extern crate slog_json;
-extern crate slog_stream;
 
-use slog::DrainExt;
+use slog::Drain;
 
 use std::io;
+use std::sync::Mutex;
 
 fn main() {
-    let d1 = slog_term::streamer().stderr().full().build();
-    let d2 = slog_stream::stream(io::stdout(), slog_json::new().add_default_keys().build());
-    let log = slog::Logger::root(slog::duplicate(d1, d2).fuse(), o!("version" => env!("CARGO_PKG_VERSION")));
+    let plain = slog_term::PlainSyncDecorator::new(std::io::stdout());
+    let d1 = slog_term::FullFormat::new(plain).build().fuse();
+    let d2 = Mutex::new(slog_json::Json::default(io::stdout())).fuse();
+    let log = slog::Logger::root(slog::Duplicate::new(d1, d2).fuse(), o!("version" => env!("CARGO_PKG_VERSION")));
 
     trace!(log, "logging a trace message");
     debug!(log, "debug values"; "x" => 1, "y" => -1);
     info!(log, "some interesting info"; "where" => "right here");
     warn!(log, "be cautious!"; "why" => "you never know...");
-    error!(log, "type" => "unknown"; "wrong {}", "foobar");
+    error!(log, "wrong {}", "foobar"; "type" => "unknown");
     crit!(log, "abandoning test");
 }

@@ -26,23 +26,5 @@ slog-atomic = { git = "https://github.com/slog-rs/atomic" }
 slog-stdlog = { git = "https://github.com/slog-rs/stdlog" }
 slog-syslog = { git = "https://github.com/slog-rs/syslog" }
 
-#slog-envlogger = "*"
-
-#log = "0.3.6"
-#lazy_static = "0.1.16"
-#nix = "0.6.0"
-
-#[replace]
-#"slog:2.0.0-alpha1" = { git = "https://github.com/slog-rs/slog" }
-#"slog-json:2.0.0-alpha1" = { git = "https://github.com/slog-rs/json" }
-#"slog-async:2.0.0-alpha1" = { git = "https://github.com/slog-rs/async" }
-
-#"slog-term:2.0.0-alpha1" = { git = "https://github.com/slog-rs/term", branch="2.x.y" }
-#"slog-extra:0.2.0-alpha1" = { git = "https://github.com/slog-rs/extra", branch="2.x.y" }
-#"slog-stdlog:1.1.0" = { git = "https://github.com/slog-rs/stdlog" }
-#"slog-bunyan:1.1.1" = { git = "https://github.com/slog-rs/bunyan" }
-#"slog-envlogger:0.5.0" = { git = "https://github.com/slog-rs/envlogger" }
-#"slog-atomic:0.4.3" = { git = "https://github.com/slog-rs/atomic" }
-#"slog-scope:0.2.2" = { git = "https://github.com/slog-rs/scope" }
-#"slog-scope-stdlog:0.2.0" = { git = "https://github.com/slog-rs/scope-stdlog" }
-#"slog-syslog:1.0.0-alpha9" = { git = "https://github.com/slog-rs/syslog" }
+[replace]
+"slog:2.0.6" = { git = "https://github.com/slog-rs/slog" }

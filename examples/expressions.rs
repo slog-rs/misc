@@ -2,7 +2,9 @@
 extern crate slog;
 extern crate slog_term;
 
-use slog::DrainExt;
+use std::sync::Mutex;
+
+use slog::Drain;
 
 struct Foo;
 
@@ -17,7 +19,9 @@ struct X {
 }
 
 fn main() {
-    let log = slog::Logger::root(slog_term::streamer().full().build().fuse(), o!("version" => env!("CARGO_PKG_VERSION")));
+    let decorator = slog_term::TermDecorator::new().build();
+    let drain = Mutex::new(slog_term::FullFormat::new(decorator).build()).fuse();
+    let log = slog::Logger::root(drain, o!("version" => env!("CARGO_PKG_VERSION")));
 
     let foo = Foo;
     let r = X { foo: foo };
@@ -37,21 +41,21 @@ fn main() {
     warn!(log, "logging message bar={} foo={}", r.foo.bar(), r.foo.bar(), );
     slog_warn!(log, "logging message bar={} foo={}", r.foo.bar(), r.foo.bar(), );
 
-    warn!(log, "x" => 1; "logging message bar={}", r.foo.bar());
-    slog_warn!(log, "x" => 1; "logging message bar={}", r.foo.bar());
+    warn!(log, "logging message bar={}", r.foo.bar(); "x" => 1);
+    slog_warn!(log, "logging message bar={}", r.foo.bar(); "x" => 1);
 
-    warn!(log, "x" => 1; "logging message bar={}", r.foo.bar(),);
-    slog_warn!(log, "x" => 1; "logging message bar={}", r.foo.bar(),);
+    warn!(log, "logging message bar={}", r.foo.bar(); "x" => 1);
+    slog_warn!(log, "logging message bar={}", r.foo.bar(); "x" => 1);
 
-    warn!(log, "x" => 1, "y" => r.foo.bar(); "logging message bar={}", r.foo.bar());
-    slog_warn!(log, "x" => 1, "y" => r.foo.bar(); "logging message bar={}", r.foo.bar());
+    warn!(log, "logging message bar={}", r.foo.bar(); "x" => 1, "y" => r.foo.bar());
+    slog_warn!(log, "logging message bar={}", r.foo.bar(); "x" => 1, "y" => r.foo.bar());
 
-    warn!(log, "x" => r.foo.bar(); "logging message bar={}", r.foo.bar());
-    slog_warn!(log, "x" => r.foo.bar(); "logging message bar={}", r.foo.bar());
+    warn!(log, "logging message bar={}", r.foo.bar(); "x" => r.foo.bar());
+    slog_warn!(log, "logging message bar={}", r.foo.bar(); "x" => r.foo.bar());
 
-    warn!(log, "x" => r.foo.bar(), "y" => r.foo.bar(); "logging message bar={}", r.foo.bar());
-    slog_warn!(log, "x" => r.foo.bar(), "y" => r.foo.bar(); "logging message bar={}", r.foo.bar());
+    warn!(log, "logging message bar={}", r.foo.bar(); "x" => r.foo.bar(), "y" => r.foo.bar());
+    slog_warn!(log, "logging message bar={}", r.foo.bar(); "x" => r.foo.bar(), "y" => r.foo.bar());
 
-    warn!(log, "x" => r.foo.bar(), "y" => r.foo.bar(); "logging message bar={}", r.foo.bar(),);
-    slog_warn!(log, "x" => r.foo.bar(), "y" => r.foo.bar(); "logging message bar={}", r.foo.bar(),);
+    warn!(log, "logging message bar={}", r.foo.bar(); "x" => r.foo.bar(), "y" => r.foo.bar());
+    slog_warn!(log, "logging message bar={}", r.foo.bar(); "x" => r.foo.bar(), "y" => r.foo.bar());
 }
