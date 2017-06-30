@@ -3,16 +3,15 @@ extern crate slog;
 extern crate slog_json;
 extern crate slog_term;
 extern crate slog_atomic;
-extern crate slog_stream;
+extern crate slog_async;
 
 use slog::*;
 use slog_atomic::*;
-use slog_stream::*;
-use std::thread;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicUsize;
 
 use std::sync::atomic::Ordering::SeqCst;
-use std::sync::atomic::AtomicUsize;
-use std::sync::Arc;
+use std::thread;
 use std::time::Duration;
 
 fn slow_fib(n: u64) -> u64 {
@@ -26,7 +25,10 @@ fn main() {
     // Create a new drain hierarchy, for the need of your program.
     // Choose from collection of existing drains, or write your own
     // `struct`-s implementing `Drain` trait.
-    let drain = slog_term::streamer().async().full().build();
+    let decorator = slog_term::PlainDecorator::new(std::io::stdout());
+    let drain = slog_term::CompactFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
+
 
     // `AtomicSwitch` is a drain that wraps other drain and allows to change
     // it atomically in runtime.
@@ -36,7 +38,10 @@ fn main() {
     // Get a root logger that will log into a given drain.
     //
     // Note `o!` macro for more natural `OwnedKeyValue` sequence building.
-    let root = Logger::root(drain.fuse(), o!("version" => env!("CARGO_PKG_VERSION"), "build-id" => "8dfljdf"));
+    let root = Logger::root(
+        drain.fuse(),
+        o!("version" => env!("CARGO_PKG_VERSION"), "build-id" => "8dfljdf"),
+    );
 
     // Build logging context as data becomes available.
     //
@@ -53,8 +58,10 @@ fn main() {
         // and unfortunate `|_ : &_|` that helps
         // current `rustc` limitations. In the future,
         // a `|_|` could work.
-        move |_ : &Record| { counter.load(SeqCst)}
-    }));
+        slog::FnValue(
+            move |_ : &Record| { counter.load(SeqCst) }
+                )
+            }));
 
     // Loggers  can be cloned, passed between threads and stored without hassle.
     let join = thread::spawn({
@@ -65,23 +72,19 @@ fn main() {
             counter.fetch_add(1, SeqCst);
             info!(log, "after-fetch-add"); // counter == 1
 
+            let drain = Mutex::new(slog_json::Json::default(std::io::stderr()));
+
             // `AtomicSwitch` drain can swap it's interior atomically (race-free).
             ctrl.set(
                 // drains are composable and reusable
-                level_filter(
-                    Level::Info,
-                    async_stream(
-                        std::io::stderr(),
-                        // multiple outputs formats are supported
-                        slog_json::new().build(),
-                    ),
-                ),
+                slog::LevelFilter::new(drain, Level::Info)
+                .map(slog::Fuse)
             );
 
             // Closures can be used for lazy evaluation:
             // This `slow_fib` won't be evaluated, as the current drain discards
             // "trace" level logging records.
-            debug!(log, "debug"; "lazy-closure" => |_ : &Record| slow_fib(40));
+            debug!(log, "debug"; "lazy-closure" => FnValue(|_ : &Record| slow_fib(40)));
 
             info!(log, "subthread"; "stage" => "start");
             thread::sleep(Duration::new(1, 0));
