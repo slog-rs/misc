@@ -38,10 +38,11 @@ fn o_10() -> slog::OwnedKV<impl KV + Send + Sync + 'static> {
 impl Drain for BlackBoxDrain {
     type Ok = ();
     type Err = Never;
-    fn log(&self,
-           ri: &Record,
-           o: &OwnedKVList)
-           -> std::result::Result<(), Never> {
+    fn log(
+        &self,
+        ri: &Record,
+        o: &OwnedKVList,
+    ) -> std::result::Result<(), Never> {
 
         test::black_box((ri, o));
         Ok(())
@@ -68,27 +69,29 @@ fn async_json_blackbox() -> impl Drain<Err = Never, Ok = ()> + Clone {
 }
 
 fn empty_json_blackbox() -> impl Drain<Err = Never, Ok = ()> + Clone {
-    Arc::new(Mutex::new(slog_json::Json::new(BlackBoxWriter).build().map(Fuse)))
-        .ignore_res()
+    Arc::new(Mutex::new(
+        slog_json::Json::new(BlackBoxWriter).build().map(Fuse),
+    )).ignore_res()
 }
 
 fn json_blackbox() -> impl Drain<Err = Never, Ok = ()> + Clone {
-    Arc::new(Mutex::new(slog_json::Json::default(BlackBoxWriter).map(Fuse)))
-        .ignore_res()
+    Arc::new(Mutex::new(
+        slog_json::Json::default(BlackBoxWriter).map(Fuse),
+    )).ignore_res()
 }
 
 mod x100_typ {
     use super::*;
     #[bench]
     fn log_filter_out_empty(b: &mut Bencher) {
-        let log = Logger::root_typed(LevelFilter::new(BlackBoxDrain,
-                                                      Level::Warning)
-                                             .ignore_res(),
-                                     o!());
+        let log = Logger::root_typed(
+            LevelFilter::new(BlackBoxDrain, Level::Warning).ignore_res(),
+            o!(),
+        );
 
         b.iter(|| for _ in 0u32..100 {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
 
@@ -97,8 +100,8 @@ mod x100_typ {
         let log = Logger::root_typed(BlackBoxDrain, o_10());
 
         b.iter(|| for _ in 0u32..100 {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
     #[bench]
@@ -106,7 +109,7 @@ mod x100_typ {
         let log = Logger::root_typed(BlackBoxDrain, o!());
 
         b.iter(|| for i in 0u32..100 {
-                   info!(log,
+            info!(log,
                       "";
                       "u8" => 0u8,
                       "u16" => 0u16,
@@ -119,15 +122,15 @@ mod x100_typ {
                       "option" => Some(0),
                       "unit" => (),
                       );
-               });
+        });
     }
     #[bench]
     fn log_discard_00br_00ow(b: &mut Bencher) {
         let log = Logger::root_typed(BlackBoxDrain, o!());
 
         b.iter(|| for _ in 0u32..100 {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
 
@@ -137,8 +140,8 @@ mod x100_typ {
         let log = Logger::root_typed(BlackBoxDrain, o!());
 
         b.iter(|| for i in 0u32..100 {
-                   info!(log, ""; "u32" => i);
-               });
+            info!(log, ""; "u32" => i);
+        });
     }
 
     #[bench]
@@ -146,8 +149,8 @@ mod x100_typ {
         let log = Logger::root_typed(BlackBoxDrain, o!());
 
         b.iter(|| for i in 0u32..100 {
-                   info!(log, ""; "i32" => FnValue(move |_| {i}));
-               });
+            info!(log, ""; "i32" => FnValue(move |_:&Record|{i}));
+        });
     }
 }
 
@@ -155,13 +158,14 @@ mod x100_arc {
     use super::*;
     #[bench]
     fn log_filter_out_empty(b: &mut Bencher) {
-        let log = Logger::root(LevelFilter::new(BlackBoxDrain, Level::Warning)
-                                   .ignore_res(),
-                               o!());
+        let log = Logger::root(
+            LevelFilter::new(BlackBoxDrain, Level::Warning).ignore_res(),
+            o!(),
+        );
 
         b.iter(|| for _ in 0u32..100 {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
 
@@ -170,8 +174,8 @@ mod x100_arc {
         let log = Logger::root(BlackBoxDrain, o_10());
 
         b.iter(|| for _ in 0u32..100 {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
     #[bench]
@@ -179,7 +183,7 @@ mod x100_arc {
         let log = Logger::root(BlackBoxDrain, o!());
 
         b.iter(|| for i in 0u32..100 {
-                   info!(log,
+            info!(log,
                       "";
                       "u8" => 0u8,
                       "u16" => 0u16,
@@ -192,15 +196,15 @@ mod x100_arc {
                       "option" => Some(0),
                       "unit" => (),
                       );
-               });
+        });
     }
     #[bench]
     fn log_discard_00br_00ow(b: &mut Bencher) {
         let log = Logger::root(BlackBoxDrain, o!());
 
         b.iter(|| for _ in 0u32..100 {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
 
@@ -210,8 +214,8 @@ mod x100_arc {
         let log = Logger::root(BlackBoxDrain, o!());
 
         b.iter(|| for i in 0u32..100 {
-                   info!(log, ""; "u32" => i);
-               });
+            info!(log, ""; "u32" => i);
+        });
     }
 
     #[bench]
@@ -219,8 +223,8 @@ mod x100_arc {
         let log = Logger::root(BlackBoxDrain, o!());
 
         b.iter(|| for i in 0u32..100 {
-                   info!(log, ""; "i32" => FnValue(move |_| {i}));
-               });
+            info!(log, ""; "i32" => FnValue(move |_:&Record|{i}));
+        });
     }
 }
 
@@ -229,14 +233,14 @@ mod x1_typ {
 
     #[bench]
     fn log_filter_out_empty(b: &mut Bencher) {
-        let log = Logger::root_typed(LevelFilter::new(BlackBoxDrain,
-                                                      Level::Warning)
-                                             .ignore_res(),
-                                     o!());
+        let log = Logger::root_typed(
+            LevelFilter::new(BlackBoxDrain, Level::Warning).ignore_res(),
+            o!(),
+        );
 
         b.iter(|| {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
 
@@ -245,8 +249,8 @@ mod x1_typ {
         let log = Logger::root_typed(BlackBoxDrain, o_10());
 
         b.iter(|| {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
     #[bench]
@@ -274,8 +278,8 @@ mod x1_typ {
         let log = Logger::root_typed(BlackBoxDrain, o!());
 
         b.iter(|| {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
     #[bench]
@@ -283,8 +287,8 @@ mod x1_typ {
         let log = Logger::root_typed(BlackBoxDrain, o!());
 
         b.iter(|| {
-                   info!(log, ""; "u32" => 0u32);
-               });
+            info!(log, ""; "u32" => 0u32);
+        });
     }
 
     #[bench]
@@ -292,8 +296,8 @@ mod x1_typ {
         let log = Logger::root_typed(BlackBoxDrain, o!());
 
         b.iter(|| {
-                   info!(log, ""; "i32" => FnValue(|_| {0u32}));
-               });
+            info!(log, ""; "i32" => FnValue(move |_:&Record|{0u32}));
+        });
     }
 }
 
@@ -302,13 +306,14 @@ mod x1_arc {
 
     #[bench]
     fn log_filter_out_empty(b: &mut Bencher) {
-        let log = Logger::root(LevelFilter::new(BlackBoxDrain, Level::Warning)
-                                   .ignore_res(),
-                               o!());
+        let log = Logger::root(
+            LevelFilter::new(BlackBoxDrain, Level::Warning).ignore_res(),
+            o!(),
+        );
 
         b.iter(|| {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
 
@@ -317,8 +322,8 @@ mod x1_arc {
         let log = Logger::root(BlackBoxDrain, o_10());
 
         b.iter(|| {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
     #[bench]
@@ -346,8 +351,8 @@ mod x1_arc {
         let log = Logger::root(BlackBoxDrain, o!());
 
         b.iter(|| {
-                   info!(log, "");
-               });
+            info!(log, "");
+        });
     }
 
     #[bench]
@@ -355,8 +360,8 @@ mod x1_arc {
         let log = Logger::root(BlackBoxDrain, o!());
 
         b.iter(|| {
-                   info!(log, ""; "u32" => 0u32);
-               });
+            info!(log, ""; "u32" => 0u32);
+        });
     }
 
     #[bench]
@@ -364,8 +369,8 @@ mod x1_arc {
         let log = Logger::root(BlackBoxDrain, o!());
 
         b.iter(|| {
-                   info!(log, ""; "i32" => FnValue(|_| {0u32}));
-               });
+            info!(log, ""; "i32" => FnValue(move |_:&Record|{0u32}));
+        });
     }
 }
 
@@ -416,8 +421,8 @@ fn log_empty_json_blackbox_i32val(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, "";  "i32" => 5);
-           });
+        info!(log, "";  "i32" => 5);
+    });
 }
 
 #[bench]
@@ -426,8 +431,8 @@ fn log_empty_json_blackbox_i32closure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, ""; "i32" => FnValue(|_| {5}));
-           });
+        info!(log, ""; "i32" => FnValue(|_:&Record|{5}));
+    });
 }
 
 #[bench]
@@ -435,10 +440,10 @@ fn log_empty_json_blackbox_i32pushclosure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, ""; "i32" => PushFnValue(|_, ser| {
+        info!(log, ""; "i32" => PushFnValue(|_, ser| {
             ser.emit(5)
         }));
-           });
+    });
 }
 
 
@@ -448,10 +453,10 @@ fn log_empty_json_blackbox_strclosure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, ""; "str" => FnValue(|_| {
+        info!(log, ""; "str" => FnValue(|_:&Record| {
             String::from(LONG_STRING)
         }));
-           });
+    });
 }
 
 #[bench]
@@ -459,10 +464,10 @@ fn log_empty_json_blackbox_strpushclosure(b: &mut Bencher) {
     let log = Logger::root(empty_json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, ""; "str" => PushFnValue(|_:&Record, ser|{
+        info!(log, ""; "str" => PushFnValue(|_:&Record, ser|{
             ser.emit(LONG_STRING)
         }));
-           });
+    });
 }
 
 #[bench]
@@ -470,8 +475,8 @@ fn log_json_blackbox_i32val(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, "";  "i32" => 5);
-           });
+        info!(log, "";  "i32" => 5);
+    });
 }
 
 #[bench]
@@ -520,8 +525,8 @@ fn log_empty_json_blackbox_00br_10ow(b: &mut Bencher) {
 
 
     b.iter(|| {
-               info!(log, "");
-           });
+        info!(log, "");
+    });
 }
 
 #[bench]
@@ -541,8 +546,8 @@ fn log_json_blackbox_10br_00ow(b: &mut Bencher) {
             ));
 
     b.iter(|| {
-               info!(log, "");
-           });
+        info!(log, "");
+    });
 }
 
 #[bench]
@@ -551,8 +556,8 @@ fn log_json_blackbox_i32closure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, ""; "i32" => FnValue(|_|{5}));
-           });
+        info!(log, ""; "i32" => FnValue(|_:&Record|{5}));
+    });
 }
 
 #[bench]
@@ -560,10 +565,10 @@ fn log_json_blackbox_i32pushclosure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, ""; "i32" => PushFnValue(|_:&Record, ser|{
+        info!(log, ""; "i32" => PushFnValue(|_:&Record, ser|{
             ser.emit(5)
         }));
-           });
+    });
 }
 
 #[bench]
@@ -571,10 +576,10 @@ fn log_json_blackbox_strclosure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, ""; "str" => FnValue(|_| {
+        info!(log, ""; "str" => FnValue(|_:&Record| {
             String::from(LONG_STRING)
         }));
-           });
+    });
 }
 
 #[bench]
@@ -582,10 +587,10 @@ fn log_json_blackbox_strpushclosure(b: &mut Bencher) {
     let log = Logger::root(json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, ""; "str" => PushFnValue(|_, ser|{
+        info!(log, ""; "str" => PushFnValue(|_, ser|{
             ser.emit(LONG_STRING)
         }));
-           });
+    });
 }
 
 #[bench]
@@ -593,8 +598,8 @@ fn log_async_json_blackbox_00br_00_ow(b: &mut Bencher) {
     let log = Logger::root(async_json_blackbox(), o!());
 
     b.iter(|| {
-               info!(log, "");
-           });
+        info!(log, "");
+    });
 }
 
 #[bench]
@@ -602,8 +607,8 @@ fn log_async_json_blackbox_00br_10_ow(b: &mut Bencher) {
     let log = Logger::root(async_json_blackbox(), o_10());
 
     b.iter(|| {
-               info!(log, "");
-           });
+        info!(log, "");
+    });
 }
 
 
@@ -674,6 +679,6 @@ fn tmp_file_write_1kib(b: &mut Bencher) {
         .open("/tmp/slog-test-1k")
         .unwrap();
 
-    let buf = vec!(0u8; 1024);
+    let buf = vec![0u8; 1024];
     b.iter(|| { f.write_all(&buf).unwrap(); });
 }
