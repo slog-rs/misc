@@ -3,7 +3,7 @@ extern crate slog;
 extern crate slog_json;
 extern crate slog_term;
 
-use slog::*;
+use slog::Logger;
 
 fn main() {
     let decorator = slog_term::PlainSyncDecorator::new(std::io::stdout());
